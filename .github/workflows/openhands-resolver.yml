@@ -142,7 +142,7 @@ jobs:
             let prNumber = '';
             let branchName = '';
             let logContent = '';
-            const noChangesMessage = `No changes to commit for issue #${prNumber}. Skipping commit.`;
+            const noChangesMessage = `No changes to commit for issue #${issueNumber}. Skipping commit.`;
 
             try {
               if (success){
