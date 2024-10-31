@@ -109,7 +109,6 @@ jobs:
           fi
 
       - name: Create draft PR or push branch
-        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
