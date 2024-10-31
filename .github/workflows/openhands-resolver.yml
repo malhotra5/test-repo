@@ -83,7 +83,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install openhands-resolver
+          pip install git+https://github.com/All-Hands-AI/openhands-resolver
 
       - name: Attempt to resolve issue
         env:
@@ -96,7 +96,8 @@ jobs:
           cd /tmp && python -m openhands_resolver.resolve_issues \
             --repo ${{ github.repository }} \
             --issue-numbers ${{ env.ISSUE_NUMBER }} \
-            --issue-type ${{ env.ISSUE_TYPE }}
+            --issue-type ${{ env.ISSUE_TYPE }} \\
+            --max-iterations 1
 
       - name: Check resolution result
         id: check_result
@@ -139,18 +140,29 @@ jobs:
 
             let prNumber = '';
             let branchName = '';
+            let logContent = '';
+            const noChangesMessage = `No changes to commit for issue #${prNumber}. Skipping commit.`;
 
             try {
               if (success) {
                 prNumber = fs.readFileSync('/tmp/pr_number.txt', 'utf8').trim();
+                logContent = fs.readFileSync('/tmp/pr_result.txt', 'utf8').trim();
               } else {
                 branchName = fs.readFileSync('/tmp/branch_name.txt', 'utf8').trim();
+                logContent = fs.readFileSync('/tmp/branch_result.txt', 'utf8').trim();
               }
             } catch (error) {
               console.error('Error reading file:', error);
             }
 
-            if (success && prNumber) {
+            if (logContent.includes(noChangesMessage)) {
+              github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `The workflow to fix this issue encountered an error. Openhands failed to create any code changes.`
+              });
+            } else if (success && prNumber) {
               github.rest.issues.createComment({
                 issue_number: issueNumber,
                 owner: context.repo.owner,
