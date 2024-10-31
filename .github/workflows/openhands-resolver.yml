@@ -96,7 +96,7 @@ jobs:
           cd /tmp && python -m openhands_resolver.resolve_issues \
             --repo ${{ github.repository }} \
             --issue-numbers ${{ env.ISSUE_NUMBER }} \
-            --issue-type ${{ env.ISSUE_TYPE }} \\
+            --issue-type ${{ env.ISSUE_TYPE }} \
             --max-iterations 1
 
       - name: Check resolution result
