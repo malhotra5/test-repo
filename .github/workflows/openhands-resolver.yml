@@ -109,6 +109,7 @@ jobs:
           fi
 
       - name: Create draft PR or push branch
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
@@ -144,16 +145,25 @@ jobs:
             const noChangesMessage = `No changes to commit for issue #${prNumber}. Skipping commit.`;
 
             try {
-              if (success) {
-                prNumber = fs.readFileSync('/tmp/pr_number.txt', 'utf8').trim();
+              if (success){
                 logContent = fs.readFileSync('/tmp/pr_result.txt', 'utf8').trim();
               } else {
-                branchName = fs.readFileSync('/tmp/branch_name.txt', 'utf8').trim();
                 logContent = fs.readFileSync('/tmp/branch_result.txt', 'utf8').trim();
+              }
+            } catch (error) {
+              console.error('Error reading results file:', error);
+            }
+
+            try {
+              if (success) {
+                prNumber = fs.readFileSync('/tmp/pr_number.txt', 'utf8').trim();
+              } else {
+                branchName = fs.readFileSync('/tmp/branch_name.txt', 'utf8').trim();
               }
             } catch (error) {
               console.error('Error reading file:', error);
             }
+
 
             if (logContent.includes(noChangesMessage)) {
               github.rest.issues.createComment({
