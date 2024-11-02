@@ -33,6 +33,10 @@ jobs:
     if: github.event_name == 'workflow_call' || github.event.label.name == 'fix-me'
     runs-on: ubuntu-latest
     steps:
+      - name: Log GitHub Event Payload
+        run: |
+          echo "Event payload: ${{ toJson(github.event) }}"
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
