@@ -48,13 +48,13 @@ jobs:
 
       - name: Get latest versions and create requirements.txt
         run: |
-          python -m pip index versions openhands-resolver > versions.txt
+          python -m pip index versions openhands-resolver > resolver_versions.txt
           python -m pip index versions pip > pip_versions.txt
-          OPENHANDS_VERSION=$(head -n 1 versions.txt | awk '{print $2}')
-          PIP_VERSION=$(head -n 1 pip_versions.txt | awk '{print $2}')
+          RESOLVER_VERSION=$(head -n 1 resolver_versions.txt | awk '{print $2}' | tr -d '()')
+          PIP_VERSION=$(head -n 1 pip_versions.txt | awk '{print $2}' | tr -d '()')
 
           echo "pip==${PIP_VERSION}" > requirements.txt
-          echo "openhands-resolver==${OPENHANDS_VERSION}" >> requirements.txt
+          echo "openhands-resolver==${RESOLVER_VERSION}" >> requirements.txt
           cat requirements.txt
 
       - name: Check required environment variables
