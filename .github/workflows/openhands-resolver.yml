@@ -53,12 +53,13 @@ jobs:
           cat requirements.txt
 
       - name: Cache pip dependencies
+        if: github.event.label.name == 'fix-me'
         uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}/lib/python3.12/site-packages/*
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-openhands-resolver-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+            ${{ runner.os }}-pip-openhands-resolver-${{ hashFiles('requirements.txt') }}
 
       - name: Check required environment variables
         env:
