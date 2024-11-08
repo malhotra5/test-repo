@@ -44,18 +44,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache-dependency-path: ./requirements.txt
 
       - name: Get latest versions and create requirements.txt
         run: |
           python -m pip index versions openhands-resolver > resolver_versions.txt
-          python -m pip index versions pip > pip_versions.txt
           RESOLVER_VERSION=$(head -n 1 resolver_versions.txt | awk '{print $2}' | tr -d '()')
-          PIP_VERSION=$(head -n 1 pip_versions.txt | awk '{print $2}' | tr -d '()')
-
-          echo "pip==${PIP_VERSION}" > requirements.txt
           echo "openhands-resolver==${RESOLVER_VERSION}" >> requirements.txt
           cat requirements.txt
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.pythonLocation }}/lib/python3.12/site-packages/*
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
       - name: Check required environment variables
         env:
