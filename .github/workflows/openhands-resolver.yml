@@ -1,4 +1,5 @@
 name: Auto-Fix Tagged Issue with OpenHands
+
 on:
   workflow_call:
     inputs:
@@ -17,31 +18,42 @@ on:
         required: true
       PAT_USERNAME:
         required: true
+
   issues:
     types: [labeled]
   pull_request:
     types: [labeled]
+  issue_comment:
+    types: [created]
+
 permissions:
   contents: write
   pull-requests: write
   issues: write
+
 jobs:
   auto-fix:
-    if: github.event_name == 'workflow_call' || github.event.label.name == 'fix-me' || github.event.label.name == 'fix-me-experimental'
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event.label.name == 'fix-me' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@openhands-agent'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Get latest versions and create requirements.txt
         run: |
           python -m pip index versions openhands-resolver > resolver_versions.txt
           RESOLVER_VERSION=$(head -n 1 resolver_versions.txt | awk '{print $2}' | tr -d '()')
           echo "openhands-resolver==${RESOLVER_VERSION}" >> requirements.txt
           cat requirements.txt
+
       - name: Cache pip dependencies
         if: github.event.label.name == 'fix-me'
         uses: actions/cache@v3
@@ -50,6 +62,7 @@ jobs:
           key: ${{ runner.os }}-pip-openhands-resolver-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-openhands-resolver-${{ hashFiles('requirements.txt') }}
+
       - name: Check required environment variables
         env:
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
@@ -65,6 +78,7 @@ jobs:
               exit 1
             fi
           done
+
       - name: Set environment variables
         run: |
           if [ -n "${{ github.event.pull_request.number }}" ]; then
@@ -74,7 +88,10 @@ jobs:
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TYPE=issue" >> $GITHUB_ENV
           fi
+
+          echo "COMMENT_ID=${{ github.event.comment.id || None }}" >> $GITHUB_ENV
           echo "MAX_ITERATIONS=${{ inputs.max_iterations || 50 }}" >> $GITHUB_ENV
+
       - name: Comment on issue with start message
         uses: actions/github-script@v7
         with:
@@ -87,14 +104,16 @@ jobs:
               repo: context.repo.repo,
               body: `OpenHands started fixing the ${issueType}! You can monitor the progress [here](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`
             });
+
       - name: Install dependencies
         run: |
           if [ "${{ github.event.label.name }}" == "fix-me-experimental" ]; then
             python -m pip install --upgrade pip
-            pip install git+https://github.com/all-hands-ai/openhands-resolver.git
+            pip install git+https://github.com/all-hands-ai/openhands-resolver.git@feature/macro-invocation
           else
             python -m pip install --upgrade -r requirements.txt
           fi
+
       - name: Attempt to resolve issue
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -107,7 +126,9 @@ jobs:
             --repo ${{ github.repository }} \
             --issue-number ${{ env.ISSUE_NUMBER }} \
             --issue-type ${{ env.ISSUE_TYPE }} \
-            --max-iterations ${{ env.MAX_ITERATIONS }}
+            --max-iterations ${{ env.MAX_ITERATIONS }} \
+            --comment-number ${{ env.COMMENT_ID }}
+
       - name: Check resolution result
         id: check_result
         run: |
@@ -116,13 +137,14 @@ jobs:
           else
             echo "RESOLUTION_SUCCESS=false" >> $GITHUB_OUTPUT
           fi
+
       - name: Upload output.jsonl as artifact
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() # Upload even if the previous steps fail
         with:
           name: resolver-output
           path: /tmp/output/output.jsonl
-          retention-days: 30
+          retention-days: 30 # Keep the artifact for 30 days
 
       - name: Create draft PR or push branch
         env:
@@ -144,6 +166,7 @@ jobs:
               --send-on-failure | tee branch_result.txt && \
               grep "branch created" branch_result.txt | sed 's/.*\///g; s/.expand=1//g' > branch_name.txt
           fi
+
       - name: Comment on issue
         uses: actions/github-script@v7
         with:
@@ -152,10 +175,12 @@ jobs:
             const fs = require('fs');
             const issueNumber = ${{ env.ISSUE_NUMBER }};
             const success = ${{ steps.check_result.outputs.RESOLUTION_SUCCESS }};
+
             let prNumber = '';
             let branchName = '';
             let logContent = '';
             const noChangesMessage = `No changes to commit for issue #${issueNumber}. Skipping commit.`;
+
             try {
               if (success){
                 logContent = fs.readFileSync('/tmp/pr_result.txt', 'utf8').trim();
@@ -165,6 +190,7 @@ jobs:
             } catch (error) {
               console.error('Error reading results file:', error);
             }
+
             try {
               if (success) {
                 prNumber = fs.readFileSync('/tmp/pr_number.txt', 'utf8').trim();
@@ -174,6 +200,7 @@ jobs:
             } catch (error) {
               console.error('Error reading file:', error);
             }
+
             if (logContent.includes(noChangesMessage)) {
               github.rest.issues.createComment({
                 issue_number: issueNumber,
