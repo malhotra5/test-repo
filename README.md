@@ -1,2 +1,3 @@
-# test-repo
-test repo
+# Test openhands-resolver repo
+
+testing macro invocation for openhands-resolver
