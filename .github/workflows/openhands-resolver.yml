@@ -89,7 +89,7 @@ jobs:
             echo "ISSUE_TYPE=issue" >> $GITHUB_ENV
           fi
 
-          echo "COMMENT_ID=${{ github.event.comment.id || None }}" >> $GITHUB_ENV
+          echo "COMMENT_ID=${{ github.event.comment.id || "None" }}" >> $GITHUB_ENV
           echo "MAX_ITERATIONS=${{ inputs.max_iterations || 50 }}" >> $GITHUB_ENV
 
       - name: Comment on issue with start message
