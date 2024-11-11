@@ -15,6 +15,7 @@ permissions:
 
 env:
   MACRO: "@custom"
+  MAX_ITERATIONS: 50
 
 jobs:
   get-env:
@@ -23,19 +24,16 @@ jobs:
     if: |
       github.event.label.name == 'fix-me' ||
       (github.event_name == 'issue_comment' && 
+      startsWith(github.event.comment.body, env.MACRO) &&
       (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
     outputs:
       MACRO: ${{ env.MACRO }}
+      MAX_ITERATIONS: ${{ env.MAX_ITERATIONS }}
     steps:
       - run: echo "null"
 
   call-openhands-resolver:
     needs: [get-env]
-    if: |
-      github.event.label.name == 'fix-me' ||
-      (github.event_name == 'issue_comment' && 
-      startsWith(github.event.comment.body, needs.get-env.outputs.MACRO) &&
-      (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       max_iterations: 50
