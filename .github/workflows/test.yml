@@ -18,8 +18,8 @@ jobs:
           echo "PR Number: ${{ github.event.pull_request.number }}"
           echo "Comment Body: ${{ github.event.comment.body }}"
       - name: Log Review Variables
-          run: |
-            echo "Review ID: ${{ github.event.review.id }}"
-            echo "Review State: ${{ github.event.review.state }}"
-            echo "Review Body: ${{ github.event.review.body }}"
-          if: github.event_name == 'pull_request_review'
+        run: |
+          echo "Review ID: ${{ github.event.review.id }}"
+          echo "Review State: ${{ github.event.review.state }}"
+          echo "Review Body: ${{ github.event.review.body }}"
+        if: github.event_name == 'pull_request_review'
