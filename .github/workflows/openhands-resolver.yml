@@ -33,8 +33,8 @@ jobs:
 
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
-      max_iterations: ${{ needs.get-env.outputs.MAX_ITERATIONS }}
-      macro: ${{ needs.get-env.outputs.MACRO }}
+      max_iterations: ${{ inputs.max_iterations }}
+      macro: ${{ inputs.macro }}
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
       PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
