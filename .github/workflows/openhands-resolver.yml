@@ -18,7 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Echo macro input
-        run: echo "Macro input is: ${{ inputs.macro || '@openhands-agent' }}"
+        run: |
+          echo "Macro input is: ${{ inputs.macro || '@openhands-agent' }}"
 
       - name: Call OpenHands Resolver Workflow
         if: |
@@ -27,7 +28,7 @@ jobs:
         uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
         with:
           max_iterations: 50
-          macro: '@custom'
+          macro: "@custom"
         secrets:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
           PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
