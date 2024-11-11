@@ -30,7 +30,7 @@ jobs:
       (github.event_name == 'issue_comment' && 
       startsWith(github.event.comment.body, needs.check-macro.outputs.MACRO) &&
       (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
-    uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/macro-invocation
+    uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       max_iterations: 50
       macro: needs.check-macro.outputs.MACRO
