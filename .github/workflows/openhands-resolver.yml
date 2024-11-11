@@ -14,7 +14,7 @@ permissions:
   issues: write
 
 env:
-  MACRO: "@openhands-agent"
+  MACRO: "@custom"
   MAX_ITERATIONS: 50
 
 jobs:
