@@ -39,7 +39,7 @@ jobs:
     needs: [get-env]
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
-      max_iterations: 50
+      max_iterations: ${{ needs.get-env.outputs.MAX_ITERATIONS }}
       macro: ${{ needs.get-env.outputs.MACRO }}
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
