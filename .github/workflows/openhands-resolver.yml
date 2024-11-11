@@ -23,6 +23,10 @@ jobs:
     outputs:
       MACRO: ${{ env.MACRO }}
     steps:
+      if: |
+        github.event.label.name == 'fix-me' ||
+        (github.event_name == 'issue_comment' && 
+        (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
       - run: echo "null"
 
   call-openhands-resolver:
@@ -35,7 +39,7 @@ jobs:
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       max_iterations: 50
-      macro: env.MACRO
+      macro: needs.get-env.outputs.MACRO
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
       PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
