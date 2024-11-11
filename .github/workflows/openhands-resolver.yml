@@ -21,15 +21,16 @@ jobs:
     steps:
       - name: Set and echo macro input
         run: |
-          echo "MACRO IS $MACRO"
           echo "MACRO=$MACRO" >> $GITHUB_OUTPUT
 
   call-openhands-resolver:
     needs: check-macro
     if: |
       github.event.label.name == 'fix-me' ||
-      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, needs.check-macro.outputs.macro))
-    uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
+      (github.event_name == 'issue_comment' && 
+      startsWith(github.event.comment.body, needs.check-macro.outputs.macro) &&
+      (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
+    uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@main
     with:
       max_iterations: 50
       macro: "@custom"
