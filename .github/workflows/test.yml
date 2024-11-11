@@ -9,8 +9,7 @@ jobs:
   log-env:
     runs-on: ubuntu-latest
     steps:
-      - name: Log github variables
-      run: |
+      - name: Log GitHub Variables
+        run: |
           echo "Comment ID: ${{ github.event.comment.id }}"
           echo "Issue/PR Number: ${{ github.event.issue.number }}"
-
