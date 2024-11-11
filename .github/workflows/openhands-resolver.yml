@@ -21,6 +21,7 @@ jobs:
     steps:
       - name: Set and echo macro input
         run: |
+          echo "MACRO IS $MACRO"
           echo "MACRO=$MACRO" >> $GITHUB_OUTPUT
 
   call-openhands-resolver:
