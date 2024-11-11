@@ -25,7 +25,7 @@ jobs:
       ${{
         github.event.label.name == 'fix-me' ||
         (github.event_name == 'issue_comment' && 
-        startsWith(github.event.comment.body, env.MACRO }}) &&
+        startsWith(github.event.comment.body, env.MACRO) &&
         (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
       }}
     outputs:
