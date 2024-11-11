@@ -15,16 +15,22 @@ permissions:
 
 jobs:
   call-openhands-resolver:
-    uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
-    if: |
-      github.event.label.name == 'fix-me' ||
-      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '@openhands-agent'))
-    with:
-      max_iterations: 50
-      macro: "@custom-macro"
-    secrets:
-      PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-      PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
-      LLM_MODEL: ${{ secrets.LLM_MODEL }}
-      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-      LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo macro input
+        run: echo "Macro input is: ${{ inputs.macro || '@openhands-agent' }}"
+
+      - name: Call OpenHands Resolver Workflow
+        if: |
+          github.event.label.name == 'fix-me' ||
+          (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '@openhands-agent'))
+        uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
+        with:
+          max_iterations: 50
+          macro: '@custom'
+        secrets:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+          PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
