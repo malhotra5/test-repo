@@ -25,6 +25,8 @@ jobs:
 
   call-openhands-resolver:
     needs: check-macro
+    env:
+      MACRO: "@custom"
     if: |
       github.event.label.name == 'fix-me' ||
       (github.event_name == 'issue_comment' && 
