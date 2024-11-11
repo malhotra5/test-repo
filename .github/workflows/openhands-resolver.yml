@@ -28,12 +28,12 @@ jobs:
     if: |
       github.event.label.name == 'fix-me' ||
       (github.event_name == 'issue_comment' && 
-      startsWith(github.event.comment.body, needs.check-macro.outputs.MACRO) &&
+      startsWith(github.event.comment.body, needs.check-macro.outputs.macro) &&
       (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       max_iterations: 50
-      macro: needs.check-macro.outputs.MACRO
+      macro: needs.check-macro.outputs.macro
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
       PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
