@@ -12,4 +12,6 @@ jobs:
       - name: Log GitHub Variables
         run: |
           echo "Comment ID: ${{ github.event.comment.id }}"
-          echo "Issue/PR Number: ${{ github.event.issue.number }}"
+          echo "Issue Number: ${{ github.event.issue.number }}"
+          echo "PR Number: ${{ github.event.pull_request.number }}"
+          echo "Comment Body: ${{ github.event.comment.body }}"
