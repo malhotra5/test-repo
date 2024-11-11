@@ -13,28 +13,20 @@ permissions:
   pull-requests: write
   issues: write
 
-jobs:
-  check-macro:
-    runs-on: ubuntu-latest
-    env:
-      MACRO: "@custom"
-    steps:
-      - name: Set and echo macro input
-        run: |
-          echo "MACRO IS $MACRO"
-          echo "MACRO=$MACRO" >> $GITHUB_OUTPUT
+env:
+  MACRO: "@custom"
 
+jobs:
   call-openhands-resolver:
-    needs: check-macro
     if: |
       github.event.label.name == 'fix-me' ||
       (github.event_name == 'issue_comment' && 
-      startsWith(github.event.comment.body, needs.check-macro.outputs.macro) &&
+      startsWith(github.event.comment.body, ${{ env.MACRO }}) &&
       (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       max_iterations: 50
-      macro: needs.check-macro.outputs.macro
+      macro: ${{ env.MACRO }}
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
       PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
