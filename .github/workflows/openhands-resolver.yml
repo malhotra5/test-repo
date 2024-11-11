@@ -29,7 +29,7 @@ jobs:
       }}
     outputs:
       MACRO: ${{ env.MACRO }}
-      MAX_ITERATIONS: ${{ fromJSON(env.MAX_ITERATIONS) }}
+      MAX_ITERATIONS: ${{ env.MAX_ITERATIONS }}
     steps:
       - run: echo "null"
 
@@ -39,7 +39,7 @@ jobs:
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       macro: ${{ needs.get-env.outputs.MACRO }}
-      max_iterations: ${{ needs.get-env.outputs.MAX_ITERATIONS }}
+      max_iterations: ${{ fromJSON(needs.get-env.outputs.MAX_ITERATIONS) }}
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
       PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
