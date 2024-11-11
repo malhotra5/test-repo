@@ -7,36 +7,30 @@ on:
     types: [labeled]
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      max_iterations:
+        required: true
+        type: number
+        default: 50
+      macro:
+        required: true
+        type: string
+        default: "@openhands-agent"
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
 
-env:
-  MACRO: "@custom"
-  MAX_ITERATIONS: 50
-
 jobs:
-  get-env:
-    name: Get Environment vars
-    runs-on: ubuntu-latest
-    if: |
-      ${{
-        github.event.label.name == 'fix-me' ||
-        (github.event_name == 'issue_comment' && 
-        (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
-      }}
-    outputs:
-      MACRO: ${{ env.MACRO }}
-      MAX_ITERATIONS: ${{ env.MAX_ITERATIONS }}
-    steps:
-      - run: echo 'null'
-
   call-openhands-resolver:
-    needs: [get-env]
     if: |
-      startsWith(github.event.comment.body, needs.get-env.outputs.MACRO)
+      github.event.label.name == 'fix-me' ||
+      (github.event_name == 'issue_comment' && 
+      startsWith(github.event.comment.body, inputs.macro) &&
+      (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
+
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       max_iterations: ${{ needs.get-env.outputs.MAX_ITERATIONS }}
