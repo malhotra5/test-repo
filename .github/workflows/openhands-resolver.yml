@@ -16,14 +16,13 @@ permissions:
 jobs:
   check-macro:
     runs-on: ubuntu-latest
-    with:
-      macro: "@custom"
+    env:
+      MACRO: "@custom"
     steps:
       - name: Set and echo macro input
         run: |
-          macro="${{ inputs.macro || '@openhands-agent' }}"
-          echo "Macro input is: ${macro}"
-          echo "MACRO=${macro}" >> $GITHUB_OUTPUT
+          echo "MACRO IS $MACRO"
+          echo "MACRO=$MACRO" >> $GITHUB_OUTPUT
 
   call-openhands-resolver:
     needs: check-macro
