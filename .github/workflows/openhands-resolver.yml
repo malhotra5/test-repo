@@ -16,16 +16,20 @@ permissions:
 jobs:
   check-macro:
     runs-on: ubuntu-latest
+    with:
+      macro: "@custom"
     steps:
-      - name: Echo macro input
+      - name: Set and echo macro input
         run: |
-          echo "Macro input is: ${{ inputs.macro || '@openhands-agent' }}"
+          macro="${{ inputs.macro || '@openhands-agent' }}"
+          echo "Macro input is: ${macro}"
+          echo "MACRO=${macro}" >> $GITHUB_OUTPUT
 
   call-openhands-resolver:
     needs: check-macro
     if: |
       github.event.label.name == 'fix-me' ||
-      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '@openhands-agent'))
+      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, needs.check-macro.outputs.macro))
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       max_iterations: 50
