@@ -31,12 +31,12 @@ jobs:
       MACRO: ${{ env.MACRO }}
       MAX_ITERATIONS: ${{ env.MAX_ITERATIONS }}
     steps:
-      - name: Check comment body for macro
-        if: ${{ !startsWith(github.event.comment.body, env.MACRO) }}
-        run: exit 0
+      - run: echo 'null'
 
   call-openhands-resolver:
     needs: [get-env]
+    if: |
+      startsWith(github.event.comment.body, needs.get-env.outputs.MACRO)
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       max_iterations: ${{ needs.get-env.outputs.MAX_ITERATIONS }}
