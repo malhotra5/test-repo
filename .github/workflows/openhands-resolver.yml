@@ -18,7 +18,7 @@ jobs:
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     if: |
       github.event.label.name == 'fix-me' ||
-      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, ${{ inputs.macro || "@openhands-agent" }}))
+      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, ${{ inputs.macro || '@openhands-agent' }}))
     with:
       max_iterations: 50
       macro: "@custom-macro"
