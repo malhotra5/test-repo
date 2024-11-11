@@ -35,8 +35,7 @@ jobs:
 
   call-openhands-resolver:
     needs: [get-env]
-    if: |
-      startsWith(github.event.comment.body, needs.get-env.outputs.MACRO)
+    if: ${{ startsWith(github.event.comment.body, needs.get-env.outputs.MACRO) || github.event.label.name == 'fix-me' }}
     uses: All-Hands-AI/openhands-resolver/.github/workflows/openhands-resolver.yml@bug/comment-invocation
     with:
       max_iterations: ${{ needs.get-env.outputs.MAX_ITERATIONS }}
