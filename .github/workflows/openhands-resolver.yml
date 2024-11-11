@@ -20,13 +20,13 @@ jobs:
   get-env:
     name: Get Environment vars
     runs-on: ubuntu-latest
+    if: |
+      github.event.label.name == 'fix-me' ||
+      (github.event_name == 'issue_comment' && 
+      (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
     outputs:
       MACRO: ${{ env.MACRO }}
     steps:
-      if: |
-        github.event.label.name == 'fix-me' ||
-        (github.event_name == 'issue_comment' && 
-        (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER'))
       - run: echo "null"
 
   call-openhands-resolver:
