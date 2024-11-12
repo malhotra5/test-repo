@@ -1,0 +1,23 @@
+name: test pr comments
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  log-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log GitHub Variables
+        run: |
+          echo "Comment ID: ${{ github.event.comment.id }}"
+          echo "Issue Number: ${{ github.event.issue.number }}"
+          echo "PR Number: ${{ github.event.pull_request.number }}"
+          echo "Comment Body: ${{ github.event.comment.body }}"
+          echo "GitHub Ref: ${{ github.ref }}"
+      - name: Log Review Variables
+        run: |
+          echo "Review ID: ${{ github.event.review.id }}"
+          echo "Review State: ${{ github.event.review.state }}"
+          echo "Review Body: ${{ github.event.review.body }}"
+          echo "GitHub Ref: ${{ github.ref }}"
+        if: github.event_name == 'pull_request_review'
