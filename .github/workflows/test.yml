@@ -17,7 +17,7 @@ jobs:
           echo "Issue Number: ${{ github.event.issue.number }}"
           echo "PR Number: ${{ github.event.pull_request.number }}"
           echo "Comment Body: ${{ github.event.comment.body }}"
-          echo "GitHub Ref: ${{ github.ref }}"
+          echo "PR conditional: ${{ github.event.issue.pull_request }}"
       - name: Log Review Variables
         run: |
           echo "Review ID: ${{ github.event.review.id }}"
