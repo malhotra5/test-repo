@@ -141,9 +141,9 @@ jobs:
         run: |
           if [[ "${{ github.event.label.name }}" == "fix-me-experimental" ]] || 
              ([[ "${{ github.event_name }}" == "issue_comment" || "${{ github.event_name }}" == "pull_request_review_comment" ]] &&
-              [[ "${{ github.event.comment.body }}" == "${{ inputs.macro || '@openhands-agent' }}"* ]]) ||
+              [[ "${{ github.event.comment.body }}" == "@openhands-agent-exp"* ]]) ||
              ([[ "${{ github.event_name }}" == "pull_request_review" ]] &&
-              [[ "${{ github.event.review.body }}" == "${{ inputs.macro || '@openhands-agent' }}"* ]]); then
+              [[ "${{ github.event.review.body }}" == "@openhands-agent-exp"* ]]); then
             python -m pip install --upgrade pip
             pip install git+https://github.com/all-hands-ai/openhands.git
           else
