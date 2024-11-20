@@ -38,9 +38,11 @@ jobs:
       OPENHANDS_ENV: ${{ steps.step1.outputs.openhands_env }}
     steps:
       - id: step1
+        env:
+          ENV_SECRETS: ${{ toJSON(secrets) }}
         run: |
           # Extract stringified JSON and filter keys starting with OPENHANDS_
-          secrets=$(jq -n 'secrets | with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
+          secrets=$(echo "$ENV_SECRETS" | jq 'fromjson | with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
           echo "openhands_env=$secrets" >> "$GITHUB_OUTPUT"
           echo "$secrets"
 
