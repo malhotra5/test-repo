@@ -43,8 +43,9 @@ jobs:
         run: |
           # Extract stringified JSON and filter keys starting with OPENHANDS_
           secrets=$(echo "$ENV_SECRETS" | jq 'with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
-          echo "openhands_env=$secrets" >> "$GITHUB_OUTPUT"
-          echo "$secrets"
+          sanitized_secrets=$(echo "$secrets" | jq -c .) 
+          echo "openhands_env=$sanitized_secrets" >> "$GITHUB_OUTPUT"
+          echo "$sanitized_secrets"
 
   call-resolver:
     needs: setup-and-resolve
