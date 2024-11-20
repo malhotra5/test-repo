@@ -40,7 +40,7 @@ jobs:
       - id: step1
         run: |
           # Extract stringified JSON and filter keys starting with OPENHANDS_
-          secrets=$(jq -n 'env | with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
+          secrets=$(jq -n 'secrets | with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
           echo "openhands_env=$secrets" >> "$GITHUB_OUTPUT"
           echo "$secrets"
 
