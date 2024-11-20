@@ -53,8 +53,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: lop
+        env:
+          PASSPHRASE: ${{ secrets.OPENHANDS_PASSPHRASE }}
         run: |
-          echo "${{ needs.setup-and-resolve.outputs.OPENHANDS_ENV }}"
+          val="${{ needs.setup-and-resolve.outputs.OPENHANDS_ENV}}"
+          output=$(echo $val | base64 -d | gpg --decrypt --passphrase "$PASSPHRASE")
+          echo "$output"
 
   call-resolver:
     needs: setup-and-resolve
