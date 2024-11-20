@@ -54,10 +54,9 @@ jobs:
     steps:
       - id: lop
         env:
-          GITHUB_TOKEN: ${{ secrets.OPENHANDS_PASSPHRASE }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          echo "$GITHUB_TOKEN" | gh auth login --with-token
           gh secret list --repo "$REPO"
 
   call-resolver:
