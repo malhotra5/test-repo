@@ -40,6 +40,7 @@ jobs:
       - id: step1
         env:
           ENV_SECRETS: "${{ toJSON(secrets) }}"
+          PASSPHRASE: ${{ secrets.OPENHANDS_PASSPHRASE }}
         run: |
           # Extract stringified JSON and filter keys starting with OPENHANDS_
           secrets=$(echo "$ENV_SECRETS" | jq 'with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
