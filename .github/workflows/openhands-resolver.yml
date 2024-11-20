@@ -33,15 +33,23 @@ jobs:
         (github.event.review.author_association == 'OWNER' || github.event.review.author_association == 'COLLABORATOR' || github.event.review.author_association == 'MEMBER')
         )
       )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup env
+        run: |
+          # Extract stringified JSON and filter keys starting with OPENHANDS_
+          secrets=$(jq -n 'secrets | with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
+          echo "OPENHANDS_ENV=$secrets" >> $GITHUB_ENV
 
-    uses: malhotra5/OpenHands/.github/workflows/openhands-resolver.yml@resolver/env-support
-    with:
-      macro: ${{ vars.OPENHANDS_MACRO || '@openhands-agent' }}
-      max_iterations: ${{ vars.OPENHANDS_MAX_ITER || 50 }}
-    secrets:
-      PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-      PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
-      LLM_MODEL: ${{ secrets.LLM_MODEL }}
-      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-      LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
-      ENV_CONFIG: $${{ toJSON(secrets) }}
+      - name: Invoke Resolver
+        uses: malhotra5/OpenHands/.github/workflows/openhands-resolver.yml@resolver/env-support
+        with:
+          macro: ${{ vars.OPENHANDS_MACRO || '@openhands-agent' }}
+          max_iterations: ${{ vars.OPENHANDS_MAX_ITER || 50 }}
+        secrets:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+          PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          ENV_CONFIG: $${{ env.OPENHANDS_ENV }}
