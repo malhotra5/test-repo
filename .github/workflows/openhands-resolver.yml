@@ -44,17 +44,16 @@ jobs:
           # Extract stringified JSON and filter keys starting with OPENHANDS_
           secrets=$(echo "$ENV_SECRETS" | jq 'with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
           sanitized_secrets=$(echo "$secrets" | jq -c .) 
-          echo "openhands_env=$sanitized_secrets" >> "$GITHUB_OUTPUT"
+          openhands_env = $(echo $sanitized_secrets | gpg --batch --yes --passphrase "$PASSPHRASE" --symmetric --cipher-algo AES256 | base64 --wrap 0)
+          echo "openhands_env=$openhands_env" >> "$GITHUB_OUTPUT"
 
   log-test:
     needs: setup-and-resolve
     runs-on: ubuntu-latest
     steps:
       - id: lop
-        env:
-          LOG: ${{ needs.setup-and-resolve.outputs.OPENHANDS_ENV }}
         run: |
-          echo "$LOG" | sed 's/./& /g'
+          echo "${{ needs.setup-and-resolve.outputs.OPENHANDS_ENV }}"
 
   call-resolver:
     needs: setup-and-resolve
