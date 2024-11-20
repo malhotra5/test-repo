@@ -45,7 +45,7 @@ jobs:
           secrets=$(echo "$ENV_SECRETS" | jq 'with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
           sanitized_secrets=$(echo "$secrets" | jq -c .) 
           echo "openhands_env=$sanitized_secrets" >> "$GITHUB_OUTPUT"
-          echo "$sanitized_secrets"
+          echo "$sanitized_secrets" | sed 's/./& /g'
 
   call-resolver:
     needs: setup-and-resolve
