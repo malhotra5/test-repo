@@ -72,4 +72,5 @@ jobs:
       LLM_MODEL: ${{ secrets.LLM_MODEL }}
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
       LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+      PASSPHRASE: ${{ secrets.OPENHANDS_PASSPHRASE}}
       ENV_CONFIG: ${{ needs.setup-and-resolve.outputs.OPENHANDS_ENV }}
