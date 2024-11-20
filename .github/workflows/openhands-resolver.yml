@@ -45,7 +45,16 @@ jobs:
           secrets=$(echo "$ENV_SECRETS" | jq 'with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
           sanitized_secrets=$(echo "$secrets" | jq -c .) 
           echo "openhands_env=$sanitized_secrets" >> "$GITHUB_OUTPUT"
-          echo "$sanitized_secrets" | sed 's/./& /g'
+
+  log-test:
+    needs: setup-and-resolve
+    runs-on: ubuntu-latest
+    steps:
+      - id: lop
+        env:
+          LOG: ${{ needs.setup-and-resolve.outputs.OPENHANDS_ENV }}
+        run: |
+          echo "$LOG" | sed 's/./& /g'
 
   call-resolver:
     needs: setup-and-resolve
