@@ -45,10 +45,10 @@ jobs:
           # Extract stringified JSON and filter keys starting with OPENHANDS_
           secrets=$(echo "$ENV_SECRETS" | jq 'with_entries(select(.key | startswith("OPENHANDS_ENV_")))')
           sanitized_secrets=$(echo "$secrets" | jq -c .) 
-          # openhands_env=$(echo $sanitized_secrets | gpg --batch --yes --passphrase "$PASSPHRASE" --symmetric --cipher-algo AES256 | base64 --wrap 0)
-          # echo "openhands_env=$openhands_env" >> "$GITHUB_OUTPUT"
-          echo "::add-mask::$sanitized_secrets"
-          echo "openhands_env=$sanitized_secrets" >> "$GITHUB_OUTPUT"
+          openhands_env=$(echo $sanitized_secrets | gpg --batch --yes --passphrase "$PASSPHRASE" --symmetric --cipher-algo AES256 | base64 --wrap 0)
+          echo "openhands_env=$openhands_env" >> "$GITHUB_OUTPUT"
+          # echo "::add-mask::$sanitized_secrets"
+          # echo "openhands_env=$sanitized_secrets" >> "$GITHUB_OUTPUT"
 
   log-test:
     needs: setup-and-resolve
@@ -72,4 +72,4 @@ jobs:
       LLM_MODEL: ${{ secrets.LLM_MODEL }}
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
       LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
-      ENV_CONFIG: ${{ needs.setup-and-resolve.outputs.OPENHANDS_ENV }}
+      ENV_CONFIG: ${{ needs.setup-and-resolve.outputs.OPENHANDS_ENV | base64 -d | gpg --batch --yes --decrypt --passphrase "$PASSPHRASE" }}
