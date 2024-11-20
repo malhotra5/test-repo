@@ -54,11 +54,11 @@ jobs:
     steps:
       - id: lop
         env:
-          PASSPHRASE: ${{ secrets.OPENHANDS_PASSPHRASE }}
+          GITHUB_TOKEN: ${{ secrets.OPENHANDS_PASSPHRASE }}
+          REPO: ${{ github.repository }}
         run: |
-          val="${{ needs.setup-and-resolve.outputs.OPENHANDS_ENV}}"
-          output=$(echo $val | base64 -d | gpg --batch --yes --decrypt --passphrase "$PASSPHRASE")
-          echo "$output"
+          echo "$GITHUB_TOKEN" | gh auth login --with-token
+          gh secret list --repo "$REPO"
 
   call-resolver:
     needs: setup-and-resolve
