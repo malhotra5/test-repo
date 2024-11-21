@@ -34,7 +34,7 @@ jobs:
         )
       )
 
-    uses: malhotra5/OpenHands/.github/workflows/openhands-resolver.yml@resolver/env-support
+    uses: malhotra5/OpenHands/.github/workflows/openhands-resolver.yml@resolver/caching-bug
     with:
       macro: ${{ vars.OPENHANDS_MACRO || '@openhands-agent' }}
       max_iterations: ${{ vars.OPENHANDS_MAX_ITER || 50 }}
