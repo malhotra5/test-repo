@@ -34,6 +34,3 @@ jobs:
         )
       )
     uses: malhotra5/OpenHands/.github/workflows/openhands-resolver.yml@test-environments
-    with:
-      macro: ${{ vars.OPENHANDS_MACRO || '@openhands-agent' }}
-      max_iterations: ${{ vars.OPENHANDS_MAX_ITER || 50 }}
