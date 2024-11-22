@@ -23,4 +23,7 @@ jobs:
   call-openhands-resolver:
     uses: malhotra5/OpenHands/.github/workflows/openhands-resolver.yml@test-environments
     with:
-      environment: OPENHANDS
+      macro: ${{ vars.AGENT_MACRO || '@openhands-agent' }}
+      max_iterations: ${{ vars.OPENHANDS_MAX_ITER || 50 }}
+    secrets:
+      ENV_SECRETS: ${{ toJSON(secrets) }}
