@@ -19,10 +19,10 @@ permissions:
 
 jobs:
   call-openhands-resolver:
-    uses: malhotra5/OpenHands/.github/workflows/openhands-resolver.yml@resolver/macro-check
+    uses: Openhands/OpenHands/.github/workflows/openhands-resolver.yml@openhands-fix-issue-5263
     with:
       macro: ${{ vars.OPENHANDS_MACRO || '@openhands-agent' }}
-      max_iterations: ${{ vars.OPENHANDS_MAX_ITER || 50 }}
+      max_iterations: ${{ fromJson(vars.OPENHANDS_MAX_ITER || 50) }}
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
       PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
