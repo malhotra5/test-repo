@@ -1,2 +1,2 @@
-# test-repo
+# openhandsresolver-test
 test repo
