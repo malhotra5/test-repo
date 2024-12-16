@@ -20,6 +20,11 @@ on:
         required: false
         type: string
         default: "anthropic/claude-3-5-sonnet-20241022"
+      base_container_image:
+        required: false
+        type: string
+        default: ""
+        description: "Custom sandbox env"
     secrets:
       LLM_MODEL:
         required: false
@@ -54,7 +59,6 @@ jobs:
       github.event_name == 'workflow_call' ||
       github.event.label.name == 'fix-me' ||
       github.event.label.name == 'fix-me-experimental' ||
-
       (
         ((github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
         contains(github.event.comment.body, inputs.macro || '@openhands-agent') &&
@@ -135,15 +139,19 @@ jobs:
 
       - name: Set environment variables
         run: |
-          if [ -n "${{ github.event.review.body }}" ]; then
+          # Handle pull request events first
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
             echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
             echo "ISSUE_TYPE=pr" >> $GITHUB_ENV
+          # Handle pull request review events
+          elif [ -n "${{ github.event.review.body }}" ]; then
+            echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "ISSUE_TYPE=pr" >> $GITHUB_ENV
+          # Handle issue comment events that reference a PR
           elif [ -n "${{ github.event.issue.pull_request }}" ]; then
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TYPE=pr" >> $GITHUB_ENV
-          elif [ -n "${{ github.event.pull_request.number }}" ]; then
-            echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-            echo "ISSUE_TYPE=pr" >> $GITHUB_ENV
+          # Handle regular issue events
           else
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TYPE=issue" >> $GITHUB_ENV
@@ -157,6 +165,7 @@ jobs:
 
           echo "MAX_ITERATIONS=${{ inputs.max_iterations || 50 }}" >> $GITHUB_ENV
           echo "SANDBOX_ENV_GITHUB_TOKEN=${{ secrets.PAT_TOKEN || github.token }}" >> $GITHUB_ENV
+          echo "SANDBOX_ENV_BASE_CONTAINER_IMAGE=${{ inputs.base_container_image }}" >> $GITHUB_ENV
 
           # Set branch variables
           echo "TARGET_BRANCH=${{ inputs.target_branch }}" >> $GITHUB_ENV
@@ -233,7 +242,8 @@ jobs:
           if [ "${{ steps.check_result.outputs.RESOLUTION_SUCCESS }}" == "true" ]; then
             cd /tmp && python -m openhands.resolver.send_pull_request \
               --issue-number ${{ env.ISSUE_NUMBER }} \
-              --pr-type draft | tee pr_result.txt && \
+              --pr-type draft \
+              --reviewer ${{ github.actor }} | tee pr_result.txt && \
               grep "draft created" pr_result.txt | sed 's/.*\///g' > pr_number.txt
           else
             cd /tmp && python -m openhands.resolver.send_pull_request \
@@ -243,30 +253,56 @@ jobs:
               grep "branch created" branch_result.txt | sed 's/.*\///g; s/.expand=1//g' > branch_name.txt
           fi
 
-      - name: Comment on issue
+      # Step for when agent is invoked on PR
+      - name: Analyze Push Logs (Updated PR or No Changes) # Skip comment if PR update was successful/leave comment is agent made no code changes
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          github-token: ${{ secrets.PAT_TOKEN || github.token }}
+        env:
+          CONDITIONAL_EXECUTED: ${{ env.CONDITIONAL_EXECUTED || 'false' }}
+        script: |
+            const fs = require('fs');
+            const issueNumber = ${{ env.ISSUE_NUMBER }};
+            let logContent = '';
+
+            try {
+              logContent = fs.readFileSync('/tmp/pr_result.txt', 'utf8').trim();
+            } catch (error) {
+              console.error('Error reading pr_result.txt file:', error);
+            }
+
+            const noChangesMessage = `No changes to commit for issue #${issueNumber}. Skipping commit.`;
+
+            // Check logs from send_pull_request.py (pushes code to GitHub)
+            if (logContent.includes("Updated pull request")) {
+              console.log("Updated pull request found. Skipping comment.");
+              return;
+            } else if (logContent.includes(noChangesMessage)) {
+              github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `The workflow to fix this issue encountered an error. Openhands failed to create any code changes.`
+              });
+              return;
+            }
+
+      # Step for when agent is invoked on issue
+      - name: Comment on issue # Comment either PR or branch created by agent
         uses: actions/github-script@v7
         if: always() # Comment on issue even if the previous steps fail
         with:
           github-token: ${{ secrets.PAT_TOKEN || github.token }}
-          script: |
+        env:
+          CONDITIONAL_EXECUTED: ${{ env.CONDITIONAL_EXECUTED || 'false' }}
+        script: |
             const fs = require('fs');
             const issueNumber = ${{ env.ISSUE_NUMBER }};
             const success = ${{ steps.check_result.outputs.RESOLUTION_SUCCESS }};
 
             let prNumber = '';
             let branchName = '';
-            let logContent = '';
-            const noChangesMessage = `No changes to commit for issue #${issueNumber}. Skipping commit.`;
-
-            try {
-              if (success){
-                logContent = fs.readFileSync('/tmp/pr_result.txt', 'utf8').trim();
-              } else {
-                logContent = fs.readFileSync('/tmp/branch_result.txt', 'utf8').trim();
-              }
-            } catch (error) {
-              console.error('Error reading results file:', error);
-            }
 
             try {
               if (success) {
@@ -278,14 +314,9 @@ jobs:
               console.error('Error reading file:', error);
             }
 
-            if (logContent.includes(noChangesMessage)) {
-              github.rest.issues.createComment({
-                issue_number: issueNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `The workflow to fix this issue encountered an error. Openhands failed to create any code changes.`
-              });
-            } else if (success && prNumber) {
+
+            // Check "success" log from resolver output
+            if (success && prNumber) {
               github.rest.issues.createComment({
                 issue_number: issueNumber,
                 owner: context.repo.owner,
@@ -299,11 +330,20 @@ jobs:
                 repo: context.repo.repo,
                 body: `An attempt was made to automatically fix this issue, but it was unsuccessful. A branch named '${branchName}' has been created with the attempted changes. You can view the branch [here](https://github.com/${context.repo.owner}/${context.repo.repo}/tree/${branchName}). Manual intervention may be required.`
               });
-            } else {
-              github.rest.issues.createComment({
-                issue_number: issueNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `The workflow to fix this issue encountered an error. Please check the [workflow logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more information.`
-              });
             }
+
+      # Leave error comment when both PR/Issue comment handling fail
+      - name: Fallback Error Comment
+        uses: actions/github-script@v7
+        if: ${{ env.CONDITIONAL_EXECUTED == 'false' }} # Only run if no conditions were met in previous steps
+        with:
+          github-token: ${{ secrets.PAT_TOKEN || github.token }}
+          script: |
+            const issueNumber = ${{ env.ISSUE_NUMBER }};
+
+            github.rest.issues.createComment({
+              issue_number: issueNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `The workflow to fix this issue encountered an error. Please check the [workflow logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more information.`
+            });
