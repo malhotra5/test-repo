@@ -184,17 +184,35 @@ jobs:
             });
 
       - name: Install OpenHands
-        run: |
-          if [[ "${{ github.event.label.name }}" == "fix-me-experimental" ]] ||
-             ([[ "${{ github.event_name }}" == "issue_comment" || "${{ github.event_name }}" == "pull_request_review_comment" ]] &&
-              [[ "${{ github.event.comment.body }}" == "@openhands-agent-exp"* ]]) ||
-             ([[ "${{ github.event_name }}" == "pull_request_review" ]] &&
-              [[ "${{ github.event.review.body }}" == "@openhands-agent-exp"* ]]); then
-            python -m pip install --upgrade pip
-            pip install git+https://github.com/all-hands-ai/openhands.git
-          else
-            python -m pip install --upgrade -r requirements.txt
-          fi
+        uses: actions/github-script@v7
+        with:
+          script: |
+          const exec = require('@actions/exec');
+
+          const commentBody = `${{ github.event.comment.body || '' }}`.trim();
+          const reviewBody = `${{ github.event.review.body || '' }}`.trim();
+          const labelName = `${{ github.event.label.name || '' }}`.trim();
+          const eventName = `${{ github.event_name }}`.trim();
+
+          // Check conditions
+          const isExperimentalLabel = labelName === "fix-me-experimental";
+          const isIssueCommentExperimental =
+            (eventName === "issue_comment" || eventName === "pull_request_review_comment") &&
+            commentBody.includes("@openhands-agent-exp");
+          const isReviewCommentExperimental =
+            eventName === "pull_request_review" && reviewBody.includes("@openhands-agent-exp");
+
+          // Perform package installation 
+          if (isExperimentalLabel || isIssueCommentExperimental || isReviewCommentExperimental) {
+            console.log("Installing experimental OpenHands...");
+            await exec.exec("python -m pip install --upgrade pip");
+            await exec.exec("pip install git+https://github.com/all-hands-ai/openhands.git");
+          } else {
+            console.log("Installing from requirements.txt...");
+            await exec.exec("python -m pip install --upgrade pip");
+            await exec.exec("pip install -r requirements.txt");
+          }
+
 
       - name: Attempt to resolve issue
         env:
@@ -253,47 +271,9 @@ jobs:
               grep "branch created" branch_result.txt | sed 's/.*\///g; s/.expand=1//g' > branch_name.txt
           fi
 
-      # Step for when agent is invoked on PR
-      - name: Analyze Push Logs (Updated PR or No Changes) # Skip comment if PR update was successful/leave comment is agent made no code changes
-        uses: actions/github-script@v7
-        if: always()
-        env:
-          CONDITIONAL_EXECUTED: ${{ env.CONDITIONAL_EXECUTED || 'false' }}
-        with:
-          github-token: ${{ secrets.PAT_TOKEN || github.token }}
-          script: |
-            const fs = require('fs');
-            const issueNumber = ${{ env.ISSUE_NUMBER }};
-            let logContent = '';
-
-            try {
-              logContent = fs.readFileSync('/tmp/pr_result.txt', 'utf8').trim();
-            } catch (error) {
-              console.error('Error reading pr_result.txt file:', error);
-            }
-
-            const noChangesMessage = `No changes to commit for issue #${issueNumber}. Skipping commit.`;
-
-            // Check logs from send_pull_request.py (pushes code to GitHub)
-            if (logContent.includes("Updated pull request")) {
-              console.log("Updated pull request found. Skipping comment.");
-              process.env.CONDITIONAL_EXECUTED = 'true';
-            } else if (logContent.includes(noChangesMessage)) {
-              github.rest.issues.createComment({
-                issue_number: issueNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `The workflow to fix this issue encountered an error. Openhands failed to create any code changes.`
-              });
-              process.env.CONDITIONAL_EXECUTED = 'true';
-            }
-
-      # Step for when agent is invoked on issue
-      - name: Comment on issue # Comment either PR or branch created by agent
+      - name: Comment on issue
         uses: actions/github-script@v7
         if: always() # Comment on issue even if the previous steps fail
-        env:
-          CONDITIONAL_EXECUTED: ${{ env.CONDITIONAL_EXECUTED || 'false' }}
         with:
           github-token: ${{ secrets.PAT_TOKEN || github.token }}
           script: |
@@ -303,6 +283,18 @@ jobs:
 
             let prNumber = '';
             let branchName = '';
+            let logContent = '';
+            const noChangesMessage = `No changes to commit for issue #${issueNumber}. Skipping commit.`;
+
+            try {
+              if (success){
+                logContent = fs.readFileSync('/tmp/pr_result.txt', 'utf8').trim();
+              } else {
+                logContent = fs.readFileSync('/tmp/branch_result.txt', 'utf8').trim();
+              }
+            } catch (error) {
+              console.error('Error reading results file:', error);
+            }
 
             try {
               if (success) {
@@ -314,16 +306,20 @@ jobs:
               console.error('Error reading file:', error);
             }
 
-
-            // Check "success" log from resolver output
-            if (success && prNumber) {
+            if (logContent.includes(noChangesMessage)) {
+              github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `The workflow to fix this issue encountered an error. Openhands failed to create any code changes.`
+              });
+            } else if (success && prNumber) {
               github.rest.issues.createComment({
                 issue_number: issueNumber,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: `A potential fix has been generated and a draft PR #${prNumber} has been created. Please review the changes.`
               });
-              process.env.CONDITIONAL_EXECUTED = 'true';
             } else if (!success && branchName) {
               github.rest.issues.createComment({
                 issue_number: issueNumber,
@@ -331,21 +327,11 @@ jobs:
                 repo: context.repo.repo,
                 body: `An attempt was made to automatically fix this issue, but it was unsuccessful. A branch named '${branchName}' has been created with the attempted changes. You can view the branch [here](https://github.com/${context.repo.owner}/${context.repo.repo}/tree/${branchName}). Manual intervention may be required.`
               });
-              process.env.CONDITIONAL_EXECUTED = 'true';
+            } else {
+              github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `The workflow to fix this issue encountered an error. Please check the [workflow logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more information.`
+              });
             }
-
-      # Leave error comment when both PR/Issue comment handling fail
-      - name: Fallback Error Comment
-        uses: actions/github-script@v7
-        if: ${{ env.CONDITIONAL_EXECUTED == 'false' }} # Only run if no conditions were met in previous steps
-        with:
-          github-token: ${{ secrets.PAT_TOKEN || github.token }}
-          script: |
-            const issueNumber = ${{ env.ISSUE_NUMBER }};
-
-            github.rest.issues.createComment({
-              issue_number: issueNumber,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `The workflow to fix this issue encountered an error. Please check the [workflow logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more information.`
-            });
