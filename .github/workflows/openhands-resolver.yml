@@ -251,14 +251,12 @@ jobs:
             cd /tmp && python -m openhands.resolver.send_pull_request \
               --issue-number ${{ env.ISSUE_NUMBER }} \
               --pr-type draft \
-              --target-branch ${{ env.TARGET_BRANCH }} \
               --reviewer ${{ github.actor }} | tee pr_result.txt && \
               grep "draft created" pr_result.txt | sed 's/.*\///g' > pr_number.txt
           else
             cd /tmp && python -m openhands.resolver.send_pull_request \
               --issue-number ${{ env.ISSUE_NUMBER }} \
               --pr-type branch \
-              --target-branch ${{ env.TARGET_BRANCH }} \
               --send-on-failure | tee branch_result.txt && \
               grep "branch created" branch_result.txt | sed 's/.*\///g; s/.expand=1//g' > branch_name.txt
           fi
