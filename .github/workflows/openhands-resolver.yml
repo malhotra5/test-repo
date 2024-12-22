@@ -202,7 +202,7 @@ jobs:
 
 
             await exec.exec("python -m pip install --upgrade pip");
-            await exec.exec("pip install git+https://github.com/all-hands-ai/openhands.git@fix/remove-base-branch-attribute");
+            await exec.exec("pip install git+https://github.com/all-hands-ai/openhands.git");
 
       - name: Attempt to resolve issue
         env:
