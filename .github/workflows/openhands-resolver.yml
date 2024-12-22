@@ -301,6 +301,7 @@ jobs:
                 // Read result_explanation from JSON file for failed resolution
                 const outputFilePath = path.resolve('/tmp/output/output.jsonl');
                 if (fs.existsSync(outputFilePath)) {
+                console.log("exists");
                   const outputContent = fs.readFileSync(outputFilePath, 'utf8');
                   const jsonLines = outputContent.split('\n').filter(line => line.trim() !== '');
 
@@ -308,7 +309,9 @@ jobs:
                     // First entry in JSON lines has the key 'result_explanation'
                     const firstEntry = JSON.parse(jsonLines[0]);
                     resultExplanation = firstEntry.result_explanation || '';
+                    console.log(resultExplanation);
                   }
+              }
             } catch (error){
               console.error('Error reading file:', error);
             }
