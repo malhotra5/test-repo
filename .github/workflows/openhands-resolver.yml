@@ -201,15 +201,10 @@ jobs:
               eventName === "pull_request_review" && reviewBody.includes("@openhands-agent-exp");
 
             // Perform package installation
-            if (isExperimentalLabel || isIssueCommentExperimental || isReviewCommentExperimental) {
-              console.log("Installing experimental OpenHands...");
-              await exec.exec("python -m pip install --upgrade pip");
-              await exec.exec("pip install git+https://github.com/all-hands-ai/openhands.git");
-            } else {
-              console.log("Installing from requirements.txt...");
-              await exec.exec("python -m pip install --upgrade pip");
-              await exec.exec("pip install -r requirements.txt");
-            }
+
+            console.log("Installing experimental OpenHands...");
+            await exec.exec("python -m pip install --upgrade pip");
+            await exec.exec("pip install git+https://github.com/all-hands-ai/openhands.git@fix/impl-source-enum-conversion/");
 
       - name: Attempt to resolve issue
         env:
