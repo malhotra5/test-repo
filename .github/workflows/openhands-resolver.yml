@@ -100,7 +100,7 @@ jobs:
               contains(github.event.review.body, '@openhands-agent-exp')
             )
           )
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}/lib/python3.12/site-packages/*
           key: ${{ runner.os }}-pip-openhands-resolver-${{ hashFiles('requirements.txt') }}
@@ -168,7 +168,7 @@ jobs:
           echo "SANDBOX_ENV_BASE_CONTAINER_IMAGE=${{ inputs.base_container_image }}" >> $GITHUB_ENV
 
           # Set branch variables
-          echo "TARGET_BRANCH=${{ inputs.target_branch || vars.TARGET_BRANCH }}" >> $GITHUB_ENV
+          echo "TARGET_BRANCH=${{ inputs.target_branch }}" >> $GITHUB_ENV
 
       - name: Comment on issue with start message
         uses: actions/github-script@v7
@@ -187,10 +187,11 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const commentBody = `${{ github.event.comment.body || '' }}`.trim();
-            const reviewBody = `${{ github.event.review.body || '' }}`.trim();
-            const labelName = `${{ github.event.label.name || '' }}`.trim();
-            const eventName = `${{ github.event_name }}`.trim();
+            const commentBody = github.event.comment?.body?.trim() || '';
+            const reviewBody = github.event.review?.body?.trim() || '';
+            const labelName = github.event.label?.name?.trim() || '';
+            const eventName = github.event_name;
+
 
             // Check conditions
             const isExperimentalLabel = labelName === "fix-me-experimental";
@@ -201,10 +202,15 @@ jobs:
               eventName === "pull_request_review" && reviewBody.includes("@openhands-agent-exp");
 
             // Perform package installation
-
-            console.log("Installing experimental OpenHands...");
-            await exec.exec("python -m pip install --upgrade pip");
-            await exec.exec("pip install git+https://github.com/all-hands-ai/openhands.git@fix/impl-source-enum-conversion/");
+            if (isExperimentalLabel || isIssueCommentExperimental || isReviewCommentExperimental) {
+              console.log("Installing experimental OpenHands...");
+              await exec.exec("python -m pip install --upgrade pip");
+              await exec.exec("pip install git+https://github.com/all-hands-ai/openhands.git");
+            } else {
+              console.log("Installing from requirements.txt...");
+              await exec.exec("python -m pip install --upgrade pip");
+              await exec.exec("pip install -r requirements.txt");
+            }
 
       - name: Attempt to resolve issue
         env:
@@ -263,6 +269,41 @@ jobs:
               grep "branch created" branch_result.txt | sed 's/.*\///g; s/.expand=1//g' > branch_name.txt
           fi
 
+      # Step leaves comment for when agent is invoked on PR
+      - name: Analyze Push Logs (Updated PR or No Changes) # Skip comment if PR update was successful OR leave comment if the agent made no code changes
+        uses: actions/github-script@v7
+        if: always()
+        env:
+          AGENT_RESPONDED: ${{ env.AGENT_RESPONDED || 'false' }}
+        with:
+          github-token: ${{ secrets.PAT_TOKEN || github.token }}
+          script: |
+            const fs = require('fs');
+            const issueNumber = ${{ env.ISSUE_NUMBER }};
+            let logContent = '';
+
+            try {
+              logContent = fs.readFileSync('/tmp/pr_result.txt', 'utf8').trim();
+            } catch (error) {
+              console.error('Error reading pr_result.txt file:', error);
+            }
+
+            const noChangesMessage = `No changes to commit for issue #${issueNumber}. Skipping commit.`;
+
+            // Check logs from send_pull_request.py (pushes code to GitHub)
+            if (logContent.includes("Updated pull request")) {
+              console.log("Updated pull request found. Skipping comment.");
+              process.env.AGENT_RESPONDED = 'true';
+            } else if (logContent.includes(noChangesMessage)) {
+              github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `The workflow to fix this issue encountered an error. Openhands failed to create any code changes.`
+              });
+              process.env.AGENT_RESPONDED = 'true';
+            }
+
       # Step leaves comment for when agent is invoked on issue
       - name: Comment on issue # Comment link to either PR or branch created by agent
         uses: actions/github-script@v7
@@ -293,10 +334,10 @@ jobs:
 
 
             try {
+              if (!success){
                 // Read result_explanation from JSON file for failed resolution
                 const outputFilePath = path.resolve('/tmp/output/output.jsonl');
                 if (fs.existsSync(outputFilePath)) {
-                console.log("exists");
                   const outputContent = fs.readFileSync(outputFilePath, 'utf8');
                   const jsonLines = outputContent.split('\n').filter(line => line.trim() !== '');
 
@@ -304,27 +345,37 @@ jobs:
                     // First entry in JSON lines has the key 'result_explanation'
                     const firstEntry = JSON.parse(jsonLines[0]);
                     resultExplanation = firstEntry.result_explanation || '';
-                    console.log(resultExplanation);
                   }
+                }
               }
             } catch (error){
               console.error('Error reading file:', error);
             }
 
+            // Check "success" log from resolver output
+            if (success && prNumber) {
+              github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `A potential fix has been generated and a draft PR #${prNumber} has been created. Please review the changes.`
+              });
+              process.env.AGENT_RESPONDED = 'true';
+            } else if (!success && branchName) {
+              let commentBody = `An attempt was made to automatically fix this issue, but it was unsuccessful. A branch named '${branchName}' has been created with the attempted changes. You can view the branch [here](https://github.com/${context.repo.owner}/${context.repo.repo}/tree/${branchName}). Manual intervention may be required.`;
 
-            let commentBody = `An attempt was made to automatically fix this issue, but it was unsuccessful. A branch named '${branchName}' has been created with the attempted changes. You can view the branch [here](https://github.com/${context.repo.owner}/${context.repo.repo}/tree/${branchName}). Manual intervention may be required.`;
+              if (resultExplanation) {
+                commentBody += `\n\nAdditional details about the failure:\n${resultExplanation}`;
+              }
 
-            if (resultExplanation) {
-              commentBody += `\n\nAdditional details about the failure:\n${resultExplanation}`;
+              github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: commentBody
+              });
+              process.env.AGENT_RESPONDED = 'true';
             }
-
-            github.rest.issues.createComment({
-              issue_number: issueNumber,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: commentBody
-            });
-            process.env.AGENT_RESPONDED = 'true';
 
       # Leave error comment when both PR/Issue comment handling fail
       - name: Fallback Error Comment
