@@ -1,2 +1,3 @@
-# test-repo
-test repo
+# openhandsresolver-test
+
+A test repository for OpenHands resolver functionality.
