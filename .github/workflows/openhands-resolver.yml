@@ -226,7 +226,7 @@ jobs:
             if (isExperimentalLabel || isIssueCommentExperimental || isReviewCommentExperimental) {
               console.log("Installing experimental OpenHands...");
               await exec.exec("python -m pip install --upgrade pip");
-              await exec.exec("pip install git+https://github.com/all-hands-ai/openhands.git@abstract-resolver");
+              await exec.exec("pip install git+https://github.com/all-hands-ai/openhands.git@dedup-token-verification");
             } else {
               console.log("Installing from requirements.txt...");
               await exec.exec("python -m pip install --upgrade pip");
@@ -244,7 +244,7 @@ jobs:
           LLM_API_VERSION: ${{ inputs.LLM_API_VERSION }}
           PYTHONPATH: ""
         run: |
-          cd /tmp && DEBUG=1 python -m openhands.resolver.resolve_issue \
+          cd /tmp && python -m openhands.resolver.resolve_issue \
             --selected-repo ${{ github.repository }} \
             --issue-number ${{ env.ISSUE_NUMBER }} \
             --issue-type ${{ env.ISSUE_TYPE }} \
