@@ -1,1 +1,1 @@
-mama mama mia mia
+mama mia
